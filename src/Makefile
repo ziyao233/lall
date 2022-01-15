@@ -1,6 +1,6 @@
 #	lall
 #	File:/src/Makefile
-#	Date:2021.01.14
+#	Date:2021.01.15
 #	By MIT License.
 #	Copyright(C) 2022 Suote127.All rights reserved.
 
@@ -24,7 +24,7 @@ default:build
 	@$(CC) $< -c $(FLAG_CC)
 
 build:$(FILE_OBJS)
-	@$(ECHO) [CC] $(FILE_OBJS)
+	@$(ECHO) [CC] $(FILE_OBJS) -shared -o $(FILE_OUTPUT)
 	@$(CC) $(FILE_OBJS) -shared -o $(FILE_OUTPUT)
 
 clean:

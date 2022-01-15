@@ -1,7 +1,7 @@
 /*
 	lall
 	File:/src/stream.c
-	Date:2022.01.14
+	Date:2022.01.15
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
 */
@@ -38,18 +38,16 @@ static int interface_stream(lua_State *state)
 /*
 	The stream needs being on the top of the stack.
 */
-int lall_stream_get_fd(lua_State *state)
+static int interface_stream_fd(lua_State *state)
 {
-	lua_pushinteger(state,((Lall_Stream*)
-				luaL_checkudata(state,-1,
-						"lall.Stream"))
-			       ->fd);
+	lua_pushinteger(state,lall_stream_cdata(state,1)->fd);
 	return 1;
 }
 
+
 static const struct luaL_Reg streamPrototype[] = {
 		{
-			"get_fd",	lall_stream_get_fd,
+			"fd",		interface_stream_fd,
 		},
 		{
 			NULL,		NULL

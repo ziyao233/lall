@@ -1,7 +1,7 @@
 /*
 	lall
 	File:/src/stream.h
-	Date:2022.01.14
+	Date:2022.01.15
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
 */
@@ -15,6 +15,8 @@
 typedef struct {
 	int fd;
 }Lall_Stream;
+
+#define lall_stream_cdata(state,pos) ((Lall_Stream*)luaL_checkudata((state),(pos),"lall.Stream"))
 
 Lall_Stream *lall_stream_new(lua_State *state,int fd);
 
