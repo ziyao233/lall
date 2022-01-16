@@ -1,7 +1,7 @@
 /*
 	lall
 	File:/src/stream.c
-	Date:2022.01.15
+	Date:2022.01.16
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
 */
@@ -9,6 +9,10 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<stdint.h>
+
+#include<unistd.h>
+#include<errno.h>
 
 #include<lua.h>
 #include<lauxlib.h>
@@ -36,7 +40,7 @@ static int interface_stream(lua_State *state)
 }
 
 /*
-	The stream needs being on the top of the stack.
+	Integer lall.Stream:fd();
 */
 static int interface_stream_fd(lua_State *state)
 {
@@ -44,10 +48,83 @@ static int interface_stream_fd(lua_State *state)
 	return 1;
 }
 
+/*
+	String lall.Stream:read(length);
+	length:
+		Integer		Size in byte
+		String
+				"a"	Read until EOF
+				"l"	Read a line
+*/
+static int interface_stream_read(lua_State *state)
+{
+	Lall_Stream *s = lall_stream_cdata(state,1);
+
+	if (lua_isinteger(state,2)) {
+		int size = lua_tointeger(state,2);
+		luaL_Buffer buffer;
+		uint8_t *buf = (uint8_t*)luaL_buffinitsize(state,&buffer,
+							   size);
+
+		for (int count = 0;count < size;) {
+			ssize_t retVal = read(s->fd,(void*)(buf + count),
+					      size);
+
+			// A signal came or an error occured.
+			if (retVal < 0) {
+				if (errno != EINTR) {
+					luaL_error(state,
+	"An error occured while reading,errno %d",
+	errno);
+				}
+			} else {
+				count += retVal;
+			}
+		}
+
+		luaL_pushresultsize(&buffer,size);
+	} else if (lua_isstring(state,2)) {
+		char arg = *lua_tostring(state,2);
+
+		if (arg == 'a') {
+			luaL_Buffer buf;
+			luaL_buffinit(state,&buf);
+
+			uint8_t tmp[1024];
+			while (1) {
+				ssize_t retVal = read(s->fd,
+						      (void*)tmp,
+						      1024);
+				if (retVal != 1024) {
+					if (!errno) {
+						luaL_addlstring(&buf,
+							(const char*)tmp,
+							retVal);
+						break;
+					} else if (errno != EINTR) {
+						luaL_error(state,
+	"An error occured while reading,errno: %d",errno);
+					}
+				}
+				luaL_addlstring(&buf,(const char*)tmp,1024);
+			}
+			luaL_pushresult(&buf);
+		} else {
+			luaL_error(state,"Unknow opreator %c",arg);
+		}
+	} else {
+		luaL_typeerror(state,2,"string or integer");
+	}
+
+	return 1;
+}
 
 static const struct luaL_Reg streamPrototype[] = {
 		{
 			"fd",		interface_stream_fd,
+		},
+		{
+			"read",		interface_stream_read,
 		},
 		{
 			NULL,		NULL
