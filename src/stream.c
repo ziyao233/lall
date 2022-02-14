@@ -1,7 +1,7 @@
 /*
 	lall
 	File:/src/stream.c
-	Date:2022.01.16
+	Date:2022.02.14
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
 */
@@ -66,23 +66,23 @@ static int interface_stream_read(lua_State *state)
 		uint8_t *buf = (uint8_t*)luaL_buffinitsize(state,&buffer,
 							   size);
 
-		for (int count = 0;count < size;) {
+		int err = 0;
+		int count = 0;
+		while (count < size) {
 			ssize_t retVal = read(s->fd,(void*)(buf + count),
 					      size);
 
 			// A signal came or an error occured.
-			if (retVal < 0) {
-				if (errno != EINTR) {
-					luaL_error(state,
-	"An error occured while reading,errno %d",
-	errno);
-				}
+			if (retVal < 0 && errno != EINTR) {
+				break;
 			} else {
 				count += retVal;
 			}
 		}
 
-		luaL_pushresultsize(&buffer,size);
+		luaL_pushresultsize(&buffer,count);
+		lua_pushinteger(state,count);
+		lua_pushinteger(state,err);
 	} else if (lua_isstring(state,2)) {
 		char arg = *lua_tostring(state,2);
 
@@ -91,24 +91,26 @@ static int interface_stream_read(lua_State *state)
 			luaL_buffinit(state,&buf);
 
 			uint8_t tmp[1024];
+			int err;
+			size_t length = 0;
 			while (1) {
 				ssize_t retVal = read(s->fd,
 						      (void*)tmp,
 						      1024);
-				if (retVal != 1024) {
-					if (!errno) {
-						luaL_addlstring(&buf,
-							(const char*)tmp,
-							retVal);
-						break;
-					} else if (errno != EINTR) {
-						luaL_error(state,
-	"An error occured while reading,errno: %d",errno);
-					}
+				err = errno;
+				if (retVal < 0 && errno != EINTR) {
+					err = errno;
+					break;
 				}
-				luaL_addlstring(&buf,(const char*)tmp,1024);
+				length += retVal;
+				luaL_addlstring(&buf,(const char*)tmp,retVal);
+
+				if (retVal != 1024)
+					break;
 			}
 			luaL_pushresult(&buf);
+			lua_pushinteger(state,(lua_Integer)length);
+			lua_pushinteger(state,err);
 		} else {
 			luaL_error(state,"Unknow opreator %c",arg);
 		}
@@ -116,7 +118,7 @@ static int interface_stream_read(lua_State *state)
 		luaL_typeerror(state,2,"string or integer");
 	}
 
-	return 1;
+	return 3;
 }
 
 static const struct luaL_Reg streamPrototype[] = {
@@ -153,3 +155,10 @@ int luaopen_lall_stream(lua_State *state)
 	luaL_newlib(state,modStream);
 	return 1;
 }
+
+/*
+	For the girl I love...
+	Although life is full of pain...be brave plz...
+	...
+	Everything will certainly get better.
+*/
