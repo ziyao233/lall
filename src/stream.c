@@ -77,7 +77,8 @@ static int interface_stream_read(lua_State *state)
 					      size);
 
 			// A signal came or an error occured.
-			if (retVal < 0 && errno != EINTR) {
+			if (retVal < 0) {
+				err = retVal;
 				break;
 			} else {
 				count += retVal;
@@ -102,12 +103,13 @@ static int interface_stream_read(lua_State *state)
 						      (void*)tmp,
 						      1024);
 				err = errno;
-				if (retVal < 0 && errno != EINTR) {
+				if (retVal < 0) {
 					err = errno;
 					break;
 				}
 				length += retVal;
-				luaL_addlstring(&buf,(const char*)tmp,retVal);
+				luaL_addlstring(&buf,(const char*)tmp,
+						retVal);
 
 				if (retVal != 1024)
 					break;
@@ -126,12 +128,17 @@ static int interface_stream_read(lua_State *state)
 }
 
 /*
-	Integer,Integer lall.stream:read(String data[,Integer size])
-	data:	Anything can be casted into String (e.g. with __tostring method)
+	Integer,Integer lall.stream:read(String data,
+					 Integer offset,
+					 Integer size)
+	data:	Anything can be casted into String
+		(e.g. with __tostring method)
+	offset:	The start position of data in data
 	size:	The size of data.
 		The full part of data will be written if nil is passed in.
 	Return:
-		Integer		The size of the data that has been written
+		Integer		The size of the data that has been
+				written
 		Integer		errno
 */
 static int interface_stream_write(lua_State *state)
@@ -140,25 +147,19 @@ static int interface_stream_write(lua_State *state)
 
 	size_t size;
 	const char *data = lua_tolstring(state,2,&size);
-	size = (lua_gettop(state) == 2	||
+
+	size_t start = lua_tointeger(state,2);
+	size = (lua_gettop(state) < 3	||
 		lua_isnil(state,3))	?
 			size		:
 			lua_tointeger(state,3);
 
-	size_t count = 0;
-	int err = 0;
-	do {
-		ssize_t tmp = write(stream->fd,
-				    (void*)(data + count),
-				    size - count);
-		count += tmp > 0 ? tmp : 0;
-		if (errno && errno != EINTR) {
-			err = errno;
-			break;
-		}
-	} while (count < size);
+	ssize_t tmp = write(stream->fd,
+			    (void*)(data + start - 1),
+			    size - start + 1);
+	int err = errno;
 
-	lua_pushinteger(state,(lua_Integer)count);
+	lua_pushinteger(state,(lua_Integer)tmp);
 	lua_pushinteger(state,err);
 
 	return 2;
