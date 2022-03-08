@@ -15,7 +15,7 @@ FILE_OBJS	:= stream.o
 FILE_OUTPUT	:= lall.so
 
 # Flags
-FLAG_CC		:= -O0 -Wextra -Werror -Wall -g -fPIC
+FLAG_CC		:= -O0 -Wextra -Wall -g -fPIC
 
 default:build
 

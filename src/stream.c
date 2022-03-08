@@ -1,7 +1,7 @@
 /*
 	lall
 	File:/src/stream.c
-	Date:2022.02.14
+	Date:2022.03.08
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
 */
@@ -49,12 +49,16 @@ static int interface_stream_fd(lua_State *state)
 }
 
 /*
-	String lall.Stream:read(length);
+	String,Integer,Integer lall.Stream:read(length);
 	length:
 		Integer		Size in byte
 		String
 				"a"	Read until EOF
 				"l"	Read a line
+	Return:
+		String		Data that has been read
+		Integer		The size of the valid data
+		Integer		errno
 */
 static int interface_stream_read(lua_State *state)
 {
@@ -121,12 +125,54 @@ static int interface_stream_read(lua_State *state)
 	return 3;
 }
 
+/*
+	Integer,Integer lall.stream:read(String data[,Integer size])
+	data:	Anything can be casted into String (e.g. with __tostring method)
+	size:	The size of data.
+		The full part of data will be written if nil is passed in.
+	Return:
+		Integer		The size of the data that has been written
+		Integer		errno
+*/
+static int interface_stream_write(lua_State *state)
+{
+	Lall_Stream *stream = lall_stream_cdata(state,1);
+
+	size_t size;
+	const char *data = lua_tolstring(state,2,&size);
+	size = (lua_gettop(state) == 2	||
+		lua_isnil(state,3))	?
+			size		:
+			lua_tointeger(state,3);
+
+	size_t count = 0;
+	int err = 0;
+	do {
+		ssize_t tmp = write(stream->fd,
+				    (void*)(data + count),
+				    size - count);
+		count += tmp > 0 ? tmp : 0;
+		if (errno && errno != EINTR) {
+			err = errno;
+			break;
+		}
+	} while (count < size);
+
+	lua_pushinteger(state,(lua_Integer)count);
+	lua_pushinteger(state,err);
+
+	return 2;
+}
+
 static const struct luaL_Reg streamPrototype[] = {
 		{
 			"fd",		interface_stream_fd,
 		},
 		{
 			"read",		interface_stream_read,
+		},
+		{
+			"write",	interface_stream_write,
 		},
 		{
 			NULL,		NULL
@@ -146,7 +192,7 @@ static const struct luaL_Reg modStream[] = {
 /*
 	The main chunk of module lall.stream
 */
-int luaopen_lall_stream(lua_State *state)
+int luaopen_lall_Stream(lua_State *state)
 {
 	luaL_newmetatable(state,"lall.Stream");
 	luaL_newlib(state,streamPrototype);
