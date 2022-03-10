@@ -1,7 +1,7 @@
 /*
 	lall
 	File:/src/stream.c
-	Date:2022.03.08
+	Date:2022.03.11
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
 */
@@ -12,6 +12,9 @@
 #include<stdint.h>
 
 #include<unistd.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<fcntl.h>
 #include<errno.h>
 
 #include<lua.h>
@@ -165,6 +168,22 @@ static int interface_stream_write(lua_State *state)
 	return 2;
 }
 
+static int interface_stream_option(lua_State *state)
+{
+	Lall_Stream *stream = lall_stream_cdata(state,1);
+	
+	if (lua_gettop(state) == 1) {
+		lua_pushinteger(state,fcntl(stream->fd,F_GETFL,0));
+		lua_pushinteger(state,errno);
+		return 2;
+	} else {
+		int opt = luaL_checkinteger(state,2);
+		fcntl(stream->fd,F_SETFD,opt);
+		lua_pushinteger(state,errno);
+		return 1;
+	}
+}
+
 static const struct luaL_Reg streamPrototype[] = {
 		{
 			"fd",		interface_stream_fd,
@@ -174,6 +193,9 @@ static const struct luaL_Reg streamPrototype[] = {
 		},
 		{
 			"write",	interface_stream_write,
+		},
+		{
+			"option",	interface_stream_option,
 		},
 		{
 			NULL,		NULL
