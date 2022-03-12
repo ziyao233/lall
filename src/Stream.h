@@ -1,6 +1,6 @@
 /*
 	lall
-	File:/src/stream.h
+	File:/src/Stream.h
 	Date:2022.01.15
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.

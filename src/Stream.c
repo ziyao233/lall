@@ -1,6 +1,6 @@
 /*
 	lall
-	File:/src/stream.c
+	File:/src/Stream.c
 	Date:2022.03.11
 	By MIT License.
 	Copyright (c) 2022 lall developers.All rights reserved.
@@ -20,7 +20,7 @@
 #include<lua.h>
 #include<lauxlib.h>
 
-#include"stream.h"
+#include"Stream.h"
 
 Lall_Stream *lall_stream_new(lua_State *state,int fd)
 {
