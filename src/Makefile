@@ -11,7 +11,7 @@ REMOVE		:= rm
 ECHO		:= echo
 
 # Files
-FILE_OBJS	:= Stream.o
+FILE_OBJS	:= Stream.o lall.o
 FILE_OUTPUT	:= lall.so
 
 # Flags
